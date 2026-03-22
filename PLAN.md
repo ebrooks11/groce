@@ -11,7 +11,7 @@ Groce is an iOS-only grocery list app built with Expo (managed workflow). It has
 
 ## 2. Core Concept
 
-There is only one `List` type. The distinction is:
+There is only one `GroceryList` type. The distinction is:
 
 - **Active List** — a single, persistent shopping list. Items can be checked off. There is always exactly one.
 - **Saved Lists** — a library of reusable lists (e.g. "Pasta Bolognese", "Weekly Essentials", "Trader Joe's Staples"). Items are never checked off here. Tapping "Add to Active List" merges a saved list's items into the active list.
@@ -84,7 +84,7 @@ export interface Item {
   checked: boolean;   // only meaningful on the active list
 }
 
-export interface List {
+export interface GroceryList {
   id: string;
   name: string;
   items: Item[];
@@ -92,8 +92,8 @@ export interface List {
 }
 
 export interface AppState {
-  activeList: List;       // always exactly one
-  savedLists: List[];     // user's library of reusable lists
+  activeList: GroceryList;       // always exactly one
+  savedLists: GroceryList[];     // user's library of reusable lists
 }
 ```
 
