@@ -1,5 +1,6 @@
 {
   "expo": {
+    "newArchEnabled": false,
     "name": "groce-tmp",
     "slug": "groce-tmp",
     "version": "1.0.0",
