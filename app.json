@@ -1,6 +1,7 @@
 {
   "expo": {
     "newArchEnabled": false,
+    "jsEngine": "hermes",
     "name": "groce-tmp",
     "slug": "groce-tmp",
     "version": "1.0.0",
