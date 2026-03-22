@@ -5,11 +5,20 @@
 
 ## 1. Project Overview
 
-Groce is an iOS-only grocery list app built with Expo (managed workflow). It supports multiple grocery lists, a recipe library that can push ingredients into grocery lists, per-item categories and quantities, and an active shopping mode. All data is stored locally on the device using AsyncStorage. No authentication, no backend.
+Groce is an iOS-only grocery list app built with Expo (managed workflow). It has one **Active List** (your current shopping trip) and a library of **Saved Lists** — reusable named lists that can be recipes, weekly essentials, or anything else. You can add items to the active list individually or by merging in any saved list. All data is stored locally on the device using AsyncStorage. No authentication, no backend.
 
 ---
 
-## 2. Tech Stack
+## 2. Core Concept
+
+There is only one `List` type. The distinction is:
+
+- **Active List** — a single, persistent shopping list. Items can be checked off. There is always exactly one.
+- **Saved Lists** — a library of reusable lists (e.g. "Pasta Bolognese", "Weekly Essentials", "Trader Joe's Staples"). Items are never checked off here. Tapping "Add to Active List" merges a saved list's items into the active list.
+
+---
+
+## 3. Tech Stack
 
 | Concern | Package |
 |---|---|
@@ -23,7 +32,7 @@ Groce is an iOS-only grocery list app built with Expo (managed workflow). It sup
 
 ---
 
-## 3. File Structure
+## 4. File Structure
 
 ```
 groce/
@@ -36,10 +45,9 @@ groce/
     ├── navigation/
     │   └── index.tsx               # Tab navigator + stack navigators
     ├── screens/
-    │   ├── ListsScreen.tsx
-    │   ├── GroceryListScreen.tsx
-    │   ├── RecipesScreen.tsx
-    │   └── RecipeDetailScreen.tsx
+    │   ├── ActiveListScreen.tsx    # Tab 1: current shopping list
+    │   ├── SavedListsScreen.tsx    # Tab 2: library of saved lists
+    │   └── SavedListDetailScreen.tsx
     ├── components/
     │   ├── AddItemModal.tsx        # Shared add/edit item modal
     │   ├── CategorySection.tsx
@@ -55,7 +63,7 @@ groce/
 
 ---
 
-## 4. Data Model
+## 5. Data Model
 
 ```typescript
 export type Category =
@@ -73,17 +81,10 @@ export interface Item {
   category: Category;
   quantity?: number;
   unit?: Unit;
-  checked: boolean;
+  checked: boolean;   // only meaningful on the active list
 }
 
-export interface GroceryList {
-  id: string;
-  name: string;
-  items: Item[];
-  createdAt: number;
-}
-
-export interface RecipeList {
+export interface List {
   id: string;
   name: string;
   items: Item[];
@@ -91,111 +92,136 @@ export interface RecipeList {
 }
 
 export interface AppState {
-  groceryLists: GroceryList[];
-  recipeLists: RecipeList[];
+  activeList: List;       // always exactly one
+  savedLists: List[];     // user's library of reusable lists
 }
 ```
 
 ---
 
-## 5. State Actions
+## 6. State Actions
 
 ```typescript
 type Action =
-  | { type: 'ADD_LIST';           payload: { name: string } }
-  | { type: 'RENAME_LIST';        payload: { id: string; name: string } }
-  | { type: 'DELETE_LIST';        payload: { id: string } }
-  | { type: 'ADD_ITEM';           payload: { listId: string; item: Omit<Item, 'id' | 'checked'> } }
-  | { type: 'UPDATE_ITEM';        payload: { listId: string; item: Item } }
-  | { type: 'DELETE_ITEM';        payload: { listId: string; itemId: string } }
-  | { type: 'TOGGLE_ITEM';        payload: { listId: string; itemId: string } }
-  | { type: 'CLEAR_CHECKED';      payload: { listId: string } }
-  | { type: 'ADD_RECIPE';         payload: { name: string } }
-  | { type: 'RENAME_RECIPE';      payload: { id: string; name: string } }
-  | { type: 'DELETE_RECIPE';      payload: { id: string } }
-  | { type: 'ADD_RECIPE_ITEM';    payload: { recipeId: string; item: Omit<Item, 'id' | 'checked'> } }
-  | { type: 'UPDATE_RECIPE_ITEM'; payload: { recipeId: string; item: Item } }
-  | { type: 'DELETE_RECIPE_ITEM'; payload: { recipeId: string; itemId: string } }
-  | { type: 'ADD_RECIPE_TO_LIST'; payload: { recipeId: string; listId: string } }
+  // Active list items
+  | { type: 'ACTIVE_ADD_ITEM';    payload: { item: Omit<Item, 'id' | 'checked'> } }
+  | { type: 'ACTIVE_UPDATE_ITEM'; payload: { item: Item } }
+  | { type: 'ACTIVE_DELETE_ITEM'; payload: { itemId: string } }
+  | { type: 'ACTIVE_TOGGLE_ITEM'; payload: { itemId: string } }
+  | { type: 'ACTIVE_CLEAR_CHECKED' }
+  | { type: 'ACTIVE_CLEAR_ALL' }
+  // Merge a saved list into the active list
+  | { type: 'ADD_SAVED_TO_ACTIVE'; payload: { savedListId: string } }
+  // Saved lists
+  | { type: 'CREATE_SAVED_LIST';  payload: { name: string } }
+  | { type: 'RENAME_SAVED_LIST';  payload: { id: string; name: string } }
+  | { type: 'DELETE_SAVED_LIST';  payload: { id: string } }
+  // Items within a saved list
+  | { type: 'SAVED_ADD_ITEM';     payload: { listId: string; item: Omit<Item, 'id' | 'checked'> } }
+  | { type: 'SAVED_UPDATE_ITEM';  payload: { listId: string; item: Item } }
+  | { type: 'SAVED_DELETE_ITEM';  payload: { listId: string; itemId: string } }
+  // Persistence bootstrap
   | { type: 'LOAD_STATE';         payload: AppState };
 ```
 
-**`ADD_RECIPE_TO_LIST` merge logic:** For each recipe item, check if target list already has an item with the same name (case-insensitive) + category. If yes and both have numeric quantities, sum them. If yes but quantities differ, leave existing unchanged. If no match, append a copy with a new id and `checked: false`.
+**`ADD_SAVED_TO_ACTIVE` merge logic:** For each item in the saved list, check if the active list already has an item with the same `name` (case-insensitive) + `category`. If yes and both have numeric quantities, sum them. If yes but quantities are missing/mixed, leave the existing item unchanged. If no match, append a copy with a new `id` and `checked: false`.
 
-**`CLEAR_CHECKED`:** Sets `checked: false` on all items (does NOT delete them — enables list reuse).
+**`ACTIVE_CLEAR_CHECKED`:** Sets `checked: false` on all items (does NOT delete — enables list reuse after a shopping trip).
+
+**`ACTIVE_CLEAR_ALL`:** Removes all items from the active list (full reset).
 
 ---
 
-## 6. Navigation Structure
+## 7. Navigation Structure
 
 ```
 App.tsx
 └── NavigationContainer
     └── BottomTabNavigator
-        ├── Tab: Lists
-        │   └── NativeStackNavigator
-        │       ├── ListsScreen
-        │       └── GroceryListScreen  (param: listId)
-        └── Tab: Recipes
+        ├── Tab: Active  (shopping cart icon)
+        │   └── ActiveListScreen              (no stack needed)
+        └── Tab: Lists   (bookmark/list icon)
             └── NativeStackNavigator
-                ├── RecipesScreen
-                └── RecipeDetailScreen  (param: recipeId)
+                ├── SavedListsScreen
+                └── SavedListDetailScreen  (param: listId)
 ```
 
-Modals (`AddItemModal`) use React Native's `Modal` component — not navigation screens — to keep the nav graph simple.
+Modals (`AddItemModal`) use React Native's `Modal` component — not navigation screens.
 
 ---
 
-## 7. Screen Specs
+## 8. Screen Specs
 
-### ListsScreen
-- `FlatList` of grocery lists sorted by `createdAt` desc
-- Each row: list name + item count
-- Swipe-to-delete via `Swipeable` (react-native-gesture-handler)
-- Header "+" → `Alert.prompt` to name the new list → dispatch `ADD_LIST`
-- Tap row → navigate to `GroceryListScreen`
-- Empty state: "No lists yet. Tap + to create one."
+### ActiveListScreen (Tab 1)
 
-### GroceryListScreen
-- `SectionList` grouped by category (only categories with items shown, in fixed order)
-- Tap item → toggle checked (strikethrough + opacity)
-- Header right: rename (pencil) + "Clear Checked" (shown only when items are checked)
-- FAB (bottom-right) opens `AddItemModal` to add a new item
-- Tap existing item opens `AddItemModal` in edit mode
+The primary shopping view.
+
+- `SectionList` of active list items grouped by category (only non-empty categories shown, in fixed order)
+- Tap item → toggle checked (strikethrough + muted opacity)
+- Header right: "Clear Checked" button (visible only when ≥1 item is checked)
+- FAB (bottom-right) opens `AddItemModal` to add an item manually
+- Tap existing item → `AddItemModal` in edit mode
+- Long-press item → delete confirmation
+- Below FAB or in a bottom action bar: "Add a List" button → `ActionSheet` showing all saved list names → dispatch `ADD_SAVED_TO_ACTIVE` → brief confirmation
+- Empty state: "Your list is empty. Tap + to add items or add a saved list."
+
+### SavedListsScreen (Tab 2)
+
+The library of reusable lists.
+
+- `FlatList` of saved lists sorted by name (or `createdAt`)
+- Each row: list name + item count (e.g. "8 items")
+- Header "+" → `Alert.prompt` for name → dispatch `CREATE_SAVED_LIST` → navigate to `SavedListDetailScreen`
+- Tap row → navigate to `SavedListDetailScreen`
+- Swipe-to-delete (with confirmation)
+- Empty state: "No saved lists yet. Tap + to create one."
+
+### SavedListDetailScreen
+
+View/edit a saved list. No checkboxes — items are never checked here.
+
+- Header title = list name, with rename button (pencil icon)
+- "Add to Active List" button in header right → dispatch `ADD_SAVED_TO_ACTIVE` → confirmation alert → optionally navigate to the Active tab
+- `FlatList` of items (no category grouping needed, but category is stored per item)
+- FAB opens `AddItemModal` in add mode
+- Tap item → `AddItemModal` in edit mode
+- Long-press item → delete confirmation
+- Empty state: "No items yet. Tap + to add one."
 
 ### AddItemModal (shared)
-- Fields: Name (TextInput, required, auto-focused), Category (horizontal pill selector, default "Other"), Quantity (numeric TextInput, optional), Unit (horizontal pill selector, optional)
-- Save disabled while name is empty
-- Used by both grocery lists and recipe detail screens
 
-### RecipesScreen
-- Mirrors ListsScreen but for recipes
-- "+" → prompt for name → dispatch `ADD_RECIPE` → navigate to `RecipeDetailScreen`
+Used by both active list and saved list detail screens.
 
-### RecipeDetailScreen
-- Flat `FlatList` of ingredients (no checkboxes — recipes have no shopping mode)
-- Header "Add to List" button → `Alert` with all grocery list names as options → dispatch `ADD_RECIPE_TO_LIST` → confirmation alert
-- If no grocery lists exist: alert "Create a grocery list first"
-- FAB opens `AddItemModal` in add mode; tap ingredient opens in edit mode
+- Fields:
+  1. **Name** — `TextInput`, auto-focused, required
+  2. **Category** — horizontal scrollable pill selector, default `'Other'`
+  3. **Quantity** — numeric `TextInput`, `keyboardType="decimal-pad"`, optional
+  4. **Unit** — horizontal scrollable pill selector, optional (first option = no unit)
+- Save button disabled while name is empty
+- Presented as a bottom-sheet style modal (`animationType="slide"`)
 
 ---
 
-## 8. Key Components
+## 9. Key Components
 
 ### ItemRow
+
 ```
-[ Circle checkbox? ] [ Name   qty unit ]
+[ Checkbox? ]  [ Name         qty unit ]
 ```
-- Strikethrough + muted opacity when `checked`
-- `onToggle` is optional (undefined = recipe view, no checkbox)
+- `onToggle` is optional — when omitted (saved list view), no checkbox is rendered
+- Checked state: strikethrough text + reduced opacity
+- Qty + unit shown in secondary muted color
 
 ### CategorySection
-- All-caps section header in muted color
+
+- All-caps section header (small, muted, gray background)
 - Lists `ItemRow` components beneath it
+- Used as `renderSectionHeader` + `renderItem` in `SectionList`
 
 ---
 
-## 9. Styling
+## 10. Styling
 
 No third-party UI library. All `StyleSheet.create`.
 
@@ -204,52 +230,52 @@ No third-party UI library. All `StyleSheet.create`.
 - Destructive: `#FF3B30` (iOS red)
 - Secondary text: `#8E8E93`
 - 8pt spacing grid
-- FAB: 56×56 circle, position `absolute`, `bottom: 32`, `right: 24`, shadow
-- Modals: `KeyboardAvoidingView` + `behavior="padding"`, `animationType="slide"` (slide up)
-- Safe area: use `useSafeAreaInsets()` to offset FAB above tab bar
+- FAB: 56×56 circle, `position: 'absolute'`, `bottom: 32`, `right: 24`, shadow
+- Modals: `KeyboardAvoidingView` + `behavior="padding"`, `animationType="slide"`
+- Safe area: `useSafeAreaInsets()` to offset FAB above tab bar
 
 ---
 
-## 10. AsyncStorage Persistence
+## 11. AsyncStorage Persistence
 
 ```typescript
-// src/storage/storage.ts
 const STORAGE_KEY = '@groce/appState';
 export async function loadState(): Promise<AppState | null>
 export async function saveState(state: AppState): Promise<void>
 ```
 
-- On boot: `loadState()` in `useEffect` → dispatch `LOAD_STATE`
-- On every state change: debounced `saveState` (300 ms) to avoid thrashing
+- On boot: `loadState()` in `useEffect` → dispatch `LOAD_STATE`. Show minimal loading state while hydrating.
+- On state change: debounced `saveState` (300 ms) via `useRef` + `setTimeout`.
+- Initial `activeList` (before any persisted state loads): `{ id: 'active', name: 'My List', items: [], createdAt: Date.now() }`.
 
 ---
 
-## 11. Implementation Order
+## 12. Implementation Order
 
 1. `npx create-expo-app groce --template expo-template-blank-typescript`
 2. Install dependencies (React Navigation, AsyncStorage, gesture-handler, safe-area-context)
 3. `src/types/index.ts` + constants files
 4. `src/storage/storage.ts`
-5. `src/context/AppContext.tsx` (full reducer + provider + persistence hooks)
-6. `src/navigation/index.tsx` (tabs + stacks)
-7. `ListsScreen` + swipe-to-delete
-8. `GroceryListScreen` + SectionList
+5. `src/context/AppContext.tsx` (reducer + provider + persistence)
+6. `src/navigation/index.tsx` (two tabs + saved lists stack)
+7. `SavedListsScreen` + swipe-to-delete
+8. `SavedListDetailScreen`
 9. `AddItemModal` with pill selectors
-10. `RecipesScreen`
-11. `RecipeDetailScreen` + "Add to List" flow
-12. Polish: empty states, rename flows, safe area, keyboard handling
+10. `ActiveListScreen` with SectionList + toggle + "Add a List" action
+11. Polish: empty states, rename flows, safe area, merge confirmation
 
 ---
 
-## 12. QA Checklist
+## 13. QA Checklist
 
-- [ ] Create list, add items in multiple categories → verify grouping
-- [ ] Check/uncheck items → strikethrough visible
-- [ ] Clear checked → all items remain, unchecked
-- [ ] Swipe-delete a list → gone
-- [ ] Rename list
-- [ ] Create recipe, add ingredients
-- [ ] Add recipe to list → items appear correctly grouped
-- [ ] Add recipe to list with overlapping items → quantities summed
-- [ ] Kill + reopen app → all data persisted
-- [ ] "Add to List" with no grocery lists → alert shown
+- [ ] Active list: add items manually, verify category grouping
+- [ ] Active list: check/uncheck items → strikethrough
+- [ ] Active list: "Clear Checked" → items remain, unchecked
+- [ ] Create a saved list, add items
+- [ ] "Add to Active List" from saved list → items appear in active list grouped by category
+- [ ] Merge saved list with overlapping items → quantities summed correctly
+- [ ] Swipe-delete a saved list
+- [ ] Rename a saved list
+- [ ] Kill + reopen app → all data persisted (active list + saved lists)
+- [ ] Active list empty state visible when no items
+- [ ] Saved lists empty state visible when no saved lists
