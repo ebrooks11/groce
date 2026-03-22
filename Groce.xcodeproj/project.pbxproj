@@ -11,6 +11,13 @@
 		1A2B3C4D5E6F7A8B9C0D1E02 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7A8B9C0D1E03 /* ContentView.swift */; };
 		1A2B3C4D5E6F7A8B9C0D1E04 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7A8B9C0D1E05 /* Assets.xcassets */; };
 		1A2B3C4D5E6F7A8B9C0D1E06 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7A8B9C0D1E07 /* Preview Assets.xcassets */; };
+		BB000000000000000000BB00 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000000000000000000BB01 /* Models.swift */; };
+		BB000000000000000000BB02 /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000000000000000000BB03 /* AppStore.swift */; };
+		BB000000000000000000BB04 /* ItemRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000000000000000000BB05 /* ItemRow.swift */; };
+		BB000000000000000000BB06 /* AddItemSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000000000000000000BB07 /* AddItemSheet.swift */; };
+		BB000000000000000000BB08 /* ActiveListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000000000000000000BB09 /* ActiveListView.swift */; };
+		BB000000000000000000BB0A /* SavedListsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000000000000000000BB0B /* SavedListsView.swift */; };
+		BB000000000000000000BB0C /* SavedListDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB000000000000000000BB0D /* SavedListDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -19,6 +26,13 @@
 		1A2B3C4D5E6F7A8B9C0D1E03 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		1A2B3C4D5E6F7A8B9C0D1E05 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		1A2B3C4D5E6F7A8B9C0D1E07 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		BB000000000000000000BB01 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		BB000000000000000000BB03 /* AppStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStore.swift; sourceTree = "<group>"; };
+		BB000000000000000000BB05 /* ItemRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemRow.swift; sourceTree = "<group>"; };
+		BB000000000000000000BB07 /* AddItemSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddItemSheet.swift; sourceTree = "<group>"; };
+		BB000000000000000000BB09 /* ActiveListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActiveListView.swift; sourceTree = "<group>"; };
+		BB000000000000000000BB0B /* SavedListsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedListsView.swift; sourceTree = "<group>"; };
+		BB000000000000000000BB0D /* SavedListDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedListDetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,6 +51,13 @@
 			children = (
 				1A2B3C4D5E6F7A8B9C0D1E01 /* GroceApp.swift */,
 				1A2B3C4D5E6F7A8B9C0D1E03 /* ContentView.swift */,
+				BB000000000000000000BB01 /* Models.swift */,
+				BB000000000000000000BB03 /* AppStore.swift */,
+				BB000000000000000000BB05 /* ItemRow.swift */,
+				BB000000000000000000BB07 /* AddItemSheet.swift */,
+				BB000000000000000000BB09 /* ActiveListView.swift */,
+				BB000000000000000000BB0B /* SavedListsView.swift */,
+				BB000000000000000000BB0D /* SavedListDetailView.swift */,
 				1A2B3C4D5E6F7A8B9C0D1E05 /* Assets.xcassets */,
 				1A2B3C4D5E6F7A8B9C0D1E0B /* Preview Content */,
 			);
@@ -139,6 +160,13 @@
 			files = (
 				1A2B3C4D5E6F7A8B9C0D1E02 /* ContentView.swift in Sources */,
 				1A2B3C4D5E6F7A8B9C0D1E00 /* GroceApp.swift in Sources */,
+				BB000000000000000000BB00 /* Models.swift in Sources */,
+				BB000000000000000000BB02 /* AppStore.swift in Sources */,
+				BB000000000000000000BB04 /* ItemRow.swift in Sources */,
+				BB000000000000000000BB06 /* AddItemSheet.swift in Sources */,
+				BB000000000000000000BB08 /* ActiveListView.swift in Sources */,
+				BB000000000000000000BB0A /* SavedListsView.swift in Sources */,
+				BB000000000000000000BB0C /* SavedListDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

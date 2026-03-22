@@ -1,14 +1,25 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var store = AppStore()
+
     var body: some View {
-        VStack {
-            Image(systemName: "cart")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, Groce!")
+        TabView {
+            NavigationStack {
+                ActiveListView()
+            }
+            .tabItem {
+                Label("Shopping", systemImage: "cart")
+            }
+
+            NavigationStack {
+                SavedListsView()
+            }
+            .tabItem {
+                Label("Lists", systemImage: "bookmark")
+            }
         }
-        .padding()
+        .environment(store)
     }
 }
 
